@@ -17,6 +17,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <string.h>
 
 #include <linux/fb.h>
 
@@ -54,7 +55,65 @@ int fbopen()
 
   return 0;
 }
+void fbputcursor(int row, int col)
+{
+	int x, y;
+  unsigned char *pixel, *left = framebuffer +
+    (row * FONT_HEIGHT * 2 + fb_vinfo.yoffset) * fb_finfo.line_length +
+    (col * FONT_WIDTH * 2 + fb_vinfo.xoffset) * BITS_PER_PIXEL / 8 + (FONT_HEIGHT * 2 - 4) * fb_finfo.line_length;
+  for (y = FONT_HEIGHT * 2 - 4 ; y < FONT_HEIGHT * 2 ; y++, left += fb_finfo.line_length) {
+  	pixel = left;
+  	for (x = 0; x < FONT_WIDTH * 2; x ++) {
+  		pixel[0] = 255;
+  		pixel[1] = 255;
+  		pixel[2] = 255;
+  		pixel[3] = 0;
+  		pixel += 4;
+  	}
+  }
+}
 
+void fbputline(int row)
+{
+	for (int col = 0; col < 64; col ++)
+		fbputcursor(row, col);
+}
+
+void fbputredcursor(int row, int col)
+{
+	int x, y;
+  unsigned char *pixel, *left = framebuffer +
+    (row * FONT_HEIGHT * 2 + fb_vinfo.yoffset) * fb_finfo.line_length +
+    (col * FONT_WIDTH * 2 + fb_vinfo.xoffset) * BITS_PER_PIXEL / 8 + (FONT_HEIGHT * 2 - 4) * fb_finfo.line_length;
+  for (y = FONT_HEIGHT * 2 - 4 ; y < FONT_HEIGHT * 2 ; y++, left += fb_finfo.line_length) {
+  	pixel = left;
+  	for (x = 0; x < FONT_WIDTH * 2; x ++) {
+  		pixel[0] = 0;
+  		pixel[1] = 0;
+  		pixel[2] = 255;
+  		pixel[3] = 0;
+  		pixel += 4;
+  	}
+  }
+}
+
+void fbputempty(int row, int col)
+{
+	int x, y;
+  unsigned char *pixel, *left = framebuffer +
+    (row * FONT_HEIGHT * 2 + fb_vinfo.yoffset) * fb_finfo.line_length +
+    (col * FONT_WIDTH * 2 + fb_vinfo.xoffset) * BITS_PER_PIXEL / 8;
+  for (y = 0; y < FONT_HEIGHT * 2 ; y++, left += fb_finfo.line_length) {
+  	pixel = left;
+  	for (x = 0; x < FONT_WIDTH * 2; x ++) {
+  		pixel[0] = 0;
+  		pixel[1] = 0;
+  		pixel[2] = 0;
+  		pixel[3] = 0;
+  		pixel += 4;
+  	}
+  }
+}
 /*
  * Draw the given character at the given row/column.
  * fbopen() must be called first.
@@ -104,12 +163,34 @@ void fbputchar(char c, int row, int col)
 
 /*
  * Draw the given string at the given row/column.
- * String must fit on a single line: wrap-around is not handled.
+ * return the actual number of chars printed.
  */
-void fbputs(const char *s, int row, int col)
+int fbputs(const char *s, int row, int col)
 {
   char c;
-  while ((c = *s++) != 0) fbputchar(c, row, col++);
+  int num_chars = 0;
+  while ((c = *s++) != 0){ 
+  if(col >= 63){
+  	row++;
+  	col=0;
+  	}
+  fbputchar(c, row, col++);
+  num_chars ++;
+  }
+  return num_chars;
+}
+ 
+void clear_screen()
+{
+	for (int i = 0; i < 24; i ++)
+		for (int j = 0; j < 64; j ++)
+			fbputempty(i, j);
+}
+
+void clear_row(int row)
+{
+	for (int col = 0; col < 64; col ++)
+		fbputempty(row, col);
 }
 
 /* 8 X 16 console font from /lib/kbd/consolefonts/lat0-16.psfu.gz
