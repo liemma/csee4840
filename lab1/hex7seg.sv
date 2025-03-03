@@ -24,3 +24,5 @@ module hex7seg(input logic  [3:0] a,
    	endcase
    
 endmodule
+
+//test
