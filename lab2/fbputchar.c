@@ -1,7 +1,5 @@
 /*
- * fbputchar: Framebuffer character generator
  *
- * Assumes 32bpp
  *
  * References:
  *
