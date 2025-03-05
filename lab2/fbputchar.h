@@ -9,6 +9,11 @@
 
 extern int fbopen(void);
 extern void fbputchar(char, int, int);
-extern void fbputs(const char *, int, int);
+extern int fbputs(const char *, int, int);
+extern void clear_screen(void);
+extern void fbputcursor(int, int);
+extern void fbputredcursor(int, int);
+extern void fbputline(int);
+extern void clear_row(int);
 
 #endif
